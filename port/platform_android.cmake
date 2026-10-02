@@ -255,6 +255,17 @@ find_package(PNG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(Zstd REQUIRED)
 
+# Manifold is optional and is not part of the current Android dependencies.
+# Match the native platform's fallback instead of enabling code that includes
+# manifold/manifold.h without an imported library supplying its include path.
+if(WITH_MANIFOLD)
+  find_package(manifold CONFIG QUIET)
+  if(NOT TARGET manifold::manifold)
+    set(WITH_MANIFOLD OFF CACHE BOOL "" FORCE)
+    message(STATUS "Manifold not found for Android, disabling WITH_MANIFOLD")
+  endif()
+endif()
+
 # --------------------------------------------------------------------------
 # Compiler flags for Android.
 add_definitions(-DANDROID -D__ANDROID__)
