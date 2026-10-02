@@ -91,6 +91,11 @@ set(WITH_COREAUDIO OFF CACHE BOOL "" FORCE)
 
 set(WITH_FFMPEG OFF CACHE BOOL "" FORCE)
 
+# These codecs are not supplied by the Android dependency build. Match the
+# host-tools configuration instead of compiling against unavailable headers.
+set(WITH_IMAGE_OPENJPEG OFF CACHE BOOL "" FORCE)
+set(WITH_IMAGE_WEBP OFF CACHE BOOL "" FORCE)
+
 set(WITH_OPENVDB OFF CACHE BOOL "" FORCE)
 set(WITH_EMBREE OFF CACHE BOOL "" FORCE)
 set(WITH_NANOVDB OFF CACHE BOOL "" FORCE)
