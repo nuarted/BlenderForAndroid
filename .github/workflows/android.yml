@@ -1,7 +1,7 @@
 name: Android Build
 
-# NOTE: this MUST run on an x86_64 host. The Android NDK ships x86_64-only
-# Linux host binaries (clang/llvm). `ubuntu-24.04-arm` is ARM64, so the NDK
+# NOTE: this MUST run on an x86_64 host. The Android NDK ships x86_64-only 
+# Linux host binaries (clang/llvm). `ubuntu-24.04-arm` is ARM64, so the NDK 
 # cannot execute there (cross-compiling to Android from an arm64 runner is not
 # supported). We therefore use the standard free `ubuntu-24.04` runner.
 #
