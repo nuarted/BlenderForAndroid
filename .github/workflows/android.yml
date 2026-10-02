@@ -130,7 +130,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
           /opt/vcpkg/vcpkg install \
-            --triplet arm64-android --overlay-triplets="$GITHUB_WORKSPACE/port/triplets" \
+            --triplet arm64-android --overlay-triplets="$GITHUB_WORKSPACE/port/triplets" --overlay-ports="$GITHUB_WORKSPACE/port/vcpkg-ports" \
             sdl3 libepoxy fmt openexr openimageio opencolorio \
             eigen3 freetype brotli zlib zstd tiff libpng libjpeg-turbo
 

@@ -1,0 +1,13 @@
+--- a/src/lib/OpenEXRCore/internal_zstd.c
++++ b/src/lib/OpenEXRCore/internal_zstd.c
+@@ -224,6 +224,10 @@
+ 
+ #if defined(_WIN32) || defined(_WIN64)
+         tls->shuffle_buf = (uint8_t*) _aligned_malloc (aligned_size, 64);
++#elif defined(__ANDROID__) && __ANDROID_API__ < 28
++        void* buffer = NULL;
++        if (posix_memalign (&buffer, 64, aligned_size) != 0) return false;
++        tls->shuffle_buf = (uint8_t*) buffer;
+ #else
+         tls->shuffle_buf = (uint8_t*) aligned_alloc (64, aligned_size);
+ #endif

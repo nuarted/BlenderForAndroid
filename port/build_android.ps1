@@ -143,7 +143,8 @@ if (Test-Path $HostPython) {
 # These are installed by:
 #   vcpkg install sdl3 libepoxy fmt openexr opencolorio openimageio \
 #     eigen3 freetype brotli zlib zstd libpng libjpeg-turbo --triplet arm64-android \
-#     --overlay-triplets=<BlenderForAndroid>/port/triplets
+#     --overlay-triplets=<BlenderForAndroid>/port/triplets \
+#     --overlay-ports=<BlenderForAndroid>/port/vcpkg-ports
 $VcpkgInstalled = "C:/vcpkg/installed/arm64-android"
 if (Test-Path "$VcpkgInstalled/include/SDL3/SDL.h") {
     $cmakeArgs += "-DCMAKE_PREFIX_PATH=$VcpkgInstalled"
