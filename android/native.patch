@@ -1,0 +1,196 @@
+diff --git a/extern/volk/volk_impl.cc b/extern/volk/volk_impl.cc
+index 9d6c4cfb7af..9dcfc550695 100644
+--- a/extern/volk/volk_impl.cc
++++ b/extern/volk/volk_impl.cc
+@@ -5,6 +5,8 @@
+ #define VOLK_IMPLEMENTATION
+ #ifdef _WIN32
+ #  define VK_USE_PLATFORM_WIN32_KHR
++#elif defined(__ANDROID__)
++#  define VK_USE_PLATFORM_ANDROID_KHR
+ #elif defined(__APPLE__)
+ #  define VK_USE_PLATFORM_METAL_EXT
+ #else
+diff --git a/intern/ghost/intern/GHOST_ContextVK.cc b/intern/ghost/intern/GHOST_ContextVK.cc
+index e65e8337682..2cc71d5d77e 100644
+--- a/intern/ghost/intern/GHOST_ContextVK.cc
++++ b/intern/ghost/intern/GHOST_ContextVK.cc
+@@ -13,6 +13,8 @@
+ #define VK_NO_PROTOTYPES
+ #ifdef _WIN32
+ #  define VK_USE_PLATFORM_WIN32_KHR
++#elif defined(__ANDROID__)
++#  define VK_USE_PLATFORM_ANDROID_KHR
+ #elif defined(__APPLE__)
+ #  define VK_USE_PLATFORM_METAL_EXT
+ #else
+@@ -862,6 +864,8 @@ bool GHOST_ContextVK::is_device_extension_enabled(blender::StringRefNull extensi
+ GHOST_ContextVK::GHOST_ContextVK(const GHOST_ContextParams &context_params,
+ #ifdef _WIN32
+                                  HWND hwnd,
++#elif defined(__ANDROID__)
++                                 ANativeWindow *android_window,
+ #elif defined(__APPLE__)
+                                  void *metal_layer,
+ #else
+@@ -881,6 +885,8 @@ GHOST_ContextVK::GHOST_ContextVK(const GHOST_ContextParams &context_params,
+     : GHOST_Context(context_params),
+ #ifdef _WIN32
+       hwnd_(hwnd),
++#elif defined(__ANDROID__)
++      android_window_(android_window),
+ #elif defined(__APPLE__)
+       metal_layer_(metal_layer),
+ #else
+@@ -1697,6 +1703,8 @@ const char *GHOST_ContextVK::getPlatformSpecificSurfaceExtension() const
+ {
+ #ifdef _WIN32
+   return VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
++#elif defined(__ANDROID__)
++  return VK_KHR_ANDROID_SURFACE_EXTENSION_NAME;
+ #elif defined(__APPLE__)
+   return VK_EXT_METAL_SURFACE_EXTENSION_NAME;
+ #else /* UNIX/Linux */
+@@ -1723,6 +1731,8 @@ GHOST_TSuccess GHOST_ContextVK::initializeDrawingContext()
+   bool use_vk_ext_swapchain_colorspace = false;
+ #ifdef _WIN32
+   const bool use_window_surface = (hwnd_ != nullptr);
++#elif defined(__ANDROID__)
++  const bool use_window_surface = (android_window_ != nullptr);
+ #elif defined(__APPLE__)
+   const bool use_window_surface = (metal_layer_ != nullptr);
+ #else /* UNIX/Linux */
+@@ -1816,6 +1826,12 @@ GHOST_TSuccess GHOST_ContextVK::initializeDrawingContext()
+     VK_CHECK(volk::vkCreateWin32SurfaceKHR(
+                  instance_vk.vk_instance, &surface_create_info, nullptr, &surface_),
+              GHOST_kFailure);
++#elif defined(__ANDROID__)
++    VkAndroidSurfaceCreateInfoKHR info = {};
++    info.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
++    info.window = android_window_;
++    VK_CHECK(volk::vkCreateAndroidSurfaceKHR(instance_vk.vk_instance, &info, nullptr, &surface_),
++             GHOST_kFailure);
+ #elif defined(__APPLE__)
+     VkMetalSurfaceCreateInfoEXT info = {};
+     info.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+diff --git a/intern/ghost/intern/GHOST_ContextVK.hh b/intern/ghost/intern/GHOST_ContextVK.hh
+index 856f959b5bc..fb00f142e1c 100644
+--- a/intern/ghost/intern/GHOST_ContextVK.hh
++++ b/intern/ghost/intern/GHOST_ContextVK.hh
+@@ -16,6 +16,8 @@
+ 
+ #ifdef _WIN32
+ #  include "GHOST_SystemWin32.hh"
++#elif defined(__ANDROID__)
++#  include <android/native_window.h>
+ #elif defined(__APPLE__)
+ #  include "GHOST_SystemCocoa.hh"
+ #  include <vulkan/vulkan_metal.h>
+@@ -112,6 +114,8 @@ class GHOST_ContextVK : public GHOST_Context {
+   GHOST_ContextVK(const GHOST_ContextParams &context_params,
+ #ifdef _WIN32
+                   HWND hwnd,
++#elif defined(__ANDROID__)
++                  ANativeWindow *android_window,
+ #elif defined(__APPLE__)
+                   /* FIXME CAMetalLayer but have issue with linking. */
+                   void *metal_layer,
+@@ -243,6 +247,8 @@ class GHOST_ContextVK : public GHOST_Context {
+  private:
+ #ifdef _WIN32
+   HWND hwnd_;
++#elif defined(__ANDROID__)
++  ANativeWindow *android_window_;
+ #elif defined(__APPLE__)
+   /* Is CAMetalLayer* */
+   void *metal_layer_;
+diff --git a/intern/ghost/intern/GHOST_SystemHeadless.hh b/intern/ghost/intern/GHOST_SystemHeadless.hh
+index 98737577474..cb1aeec6137 100644
+--- a/intern/ghost/intern/GHOST_SystemHeadless.hh
++++ b/intern/ghost/intern/GHOST_SystemHeadless.hh
+@@ -126,7 +126,7 @@ class GHOST_SystemHeadless : public GHOST_System {
+ #  ifdef _WIN32
+         GHOST_Context *context = new GHOST_ContextVK(
+             context_params_offscreen, (HWND)0, 1, 2, gpu_settings.preferred_device);
+-#  elif defined(__APPLE__)
++#  elif defined(__APPLE__) || defined(__ANDROID__)
+         GHOST_Context *context = new GHOST_ContextVK(
+             context_params_offscreen, nullptr, 1, 2, gpu_settings.preferred_device);
+ #  else
+diff --git a/intern/ghost/intern/GHOST_SystemSDL.cc b/intern/ghost/intern/GHOST_SystemSDL.cc
+index ad6802ae8ca..4e10f660d5d 100644
+--- a/intern/ghost/intern/GHOST_SystemSDL.cc
++++ b/intern/ghost/intern/GHOST_SystemSDL.cc
+@@ -1,3 +1,6 @@
++#if defined(__ANDROID__) && defined(WITH_VULKAN_BACKEND)
++#  include "GHOST_ContextVK.hh"
++#endif
+ /* SPDX-FileCopyrightText: 2011-2023 Blender Authors
+  *
+  * SPDX-License-Identifier: GPL-2.0-or-later */
+@@ -143,6 +146,16 @@ GHOST_IContext *GHOST_SystemSDL::createOffscreenContext(GHOST_GPUSettings gpu_se
+       GHOST_CONTEXT_PARAMS_FROM_GPU_SETTINGS_OFFSCREEN(gpu_settings);
+ 
+   switch (gpu_settings.context_type) {
++#if defined(__ANDROID__) && defined(WITH_VULKAN_BACKEND)
++    case GHOST_kDrawingContextTypeVulkan: {
++      GHOST_Context *context = new GHOST_ContextVK(context_params_offscreen, nullptr, 1, 2, gpu_settings.preferred_device);
++      if (context->initializeDrawingContext()) {
++        return context;
++      }
++      delete context;
++      return nullptr;
++    }
++#endif
+ #ifdef WITH_OPENGL_BACKEND
+     case GHOST_kDrawingContextTypeOpenGL: {
+ #ifdef __ANDROID__
+diff --git a/intern/ghost/intern/GHOST_WindowSDL.cc b/intern/ghost/intern/GHOST_WindowSDL.cc
+index dd063a78cd3..7e7b7fae892 100644
+--- a/intern/ghost/intern/GHOST_WindowSDL.cc
++++ b/intern/ghost/intern/GHOST_WindowSDL.cc
+@@ -1,3 +1,6 @@
++#if defined(__ANDROID__) && defined(WITH_VULKAN_BACKEND)
++#  include "GHOST_ContextVK.hh"
++#endif
+ /* SPDX-FileCopyrightText: 2011-2023 Blender Authors
+  *
+  * SPDX-License-Identifier: GPL-2.0-or-later */
+@@ -73,6 +76,18 @@ GHOST_Context *GHOST_WindowSDL::newDrawingContext(GHOST_TDrawingContextType type
+ {
+ 
+   switch (type) {
++#if defined(__ANDROID__) && defined(WITH_VULKAN_BACKEND)
++    case GHOST_kDrawingContextTypeVulkan: {
++      GHOST_Context *context = new GHOST_ContextVK(want_context_params_,
++          static_cast<ANativeWindow *>(SDL_GetPointerProperty(SDL_GetWindowProperties(sdl_win_), SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, nullptr)),
++          1, 2, {});
++      if (context->initializeDrawingContext()) {
++        return context;
++      }
++      delete context;
++      return nullptr;
++    }
++#endif
+ #ifdef WITH_OPENGL_BACKEND
+     case GHOST_kDrawingContextTypeOpenGL: {
+ #ifdef __ANDROID__
+diff --git a/source/creator/CMakeLists.txt b/source/creator/CMakeLists.txt
+index 4cac12c98ab..41e71035e9f 100644
+--- a/source/creator/CMakeLists.txt
++++ b/source/creator/CMakeLists.txt
+@@ -335,7 +335,13 @@ if(WITH_PYTHON_MODULE)
+   endif()
+ 
+ else()
+-  add_executable(blender ${EXETYPE} ${SRC})
++  if(ANDROID AND BLENDER_ANDROID_APK)
++    add_library(blender SHARED ${SRC} ${BLENDER_ANDROID_ENTRY})
++    set_target_properties(blender PROPERTIES OUTPUT_NAME main)
++    target_link_options(blender PRIVATE "-Wl,-z,max-page-size=16384")
++  else()
++    add_executable(blender ${EXETYPE} ${SRC})
++  endif()
+   if(WITH_CPU_CHECK)
+     # blender_cpu_check *NEEDS* to be linked first, there can be no exceptions
+     # to this, this is to ensure this will be the first code to run once the

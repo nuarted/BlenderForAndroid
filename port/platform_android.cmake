@@ -36,6 +36,9 @@ endif()
 # Force SDL backend for windowing.
 # Android has no native X11/Wayland/Win32, SDL is the only option.
 set(WITH_GHOST_SDL ON CACHE BOOL "" FORCE)
+# Blender computes this uncached dependency flag before loading the platform.
+# Recompute it after forcing the SDL window system, including on a fresh build.
+set(WITH_SDL ON)
 set(WITH_GHOST_X11 OFF CACHE BOOL "" FORCE)
 set(WITH_GHOST_WAYLAND OFF CACHE BOOL "" FORCE)
 

@@ -1,0 +1,10 @@
+# Experimental APK configuration uses Android's native Vulkan driver.
+if(WITH_VULKAN_BACKEND)
+  find_package(Vulkan REQUIRED)
+  find_path(SHADERC_INCLUDE_DIRS shaderc/shaderc.h HINTS "${SHADERC_ROOT_DIR}/include" REQUIRED)
+  set(SHADERC_LIBRARIES "")
+  foreach(_shader_lib shaderc shaderc_util glslang SPIRV SPIRV-Tools-opt SPIRV-Tools)
+    find_library(_shader_path_${_shader_lib} NAMES ${_shader_lib} HINTS "${SHADERC_ROOT_DIR}/lib" REQUIRED)
+    list(APPEND SHADERC_LIBRARIES "${_shader_path_${_shader_lib}}")
+  endforeach()
+endif()

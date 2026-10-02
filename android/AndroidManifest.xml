@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.blender.android.experimental" android:versionCode="1" android:versionName="0.1-experimental">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+    <uses-feature android:name="android.hardware.vulkan.version" android:version="4202496" android:required="true" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <application android:label="Blender Experimental" android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
+        android:allowBackup="false" android:extractNativeLibs="true" android:debuggable="true">
+        <provider android:name=".DiagnosticProvider" android:authorities="org.blender.android.experimental.logs"
+            android:exported="false" android:grantUriPermissions="true" />
+        <activity android:name=".LauncherActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".BlenderActivity" android:exported="false" android:process=":blender"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|locale|layoutDirection">
+        </activity>
+    </application>
+</manifest>
