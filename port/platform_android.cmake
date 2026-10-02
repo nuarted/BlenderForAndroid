@@ -58,6 +58,29 @@ set(WITH_CYCLES_HYDRA_RENDER_DELEGATE OFF CACHE BOOL "" FORCE)
 set(WITH_PYTHON OFF CACHE BOOL "" FORCE)
 set(WITH_PYTHON_MODULE OFF CACHE BOOL "" FORCE)
 
+# Build-time scripts still require host Python when embedded Python is disabled.
+# This platform replaces platform_unix.cmake, including its interpreter lookup.
+# Use Blender's shared variable so node discovery, datamodel generation, and
+# other build scripts all run through the same interpreter, outside the sysroot.
+find_program(PYTHON_EXECUTABLE NAMES python3 python NO_CMAKE_FIND_ROOT_PATH REQUIRED)
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}" -c "import sys; assert sys.version_info.major == 3; print(sys.version.split()[0])"
+  RESULT_VARIABLE _host_python_result
+  OUTPUT_VARIABLE _host_python_version
+  ERROR_VARIABLE _host_python_error
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT _host_python_result STREQUAL "0")
+  message(FATAL_ERROR
+    "PYTHON_EXECUTABLE must be a runnable host Python 3 interpreter: "
+    "${PYTHON_EXECUTABLE} (${_host_python_result}) ${_host_python_error}"
+  )
+endif()
+message(STATUS "Build scripts: Using host Python ${_host_python_version}: ${PYTHON_EXECUTABLE}")
+unset(_host_python_result)
+unset(_host_python_version)
+unset(_host_python_error)
+
 set(WITH_AUDASPACE OFF CACHE BOOL "" FORCE)
 set(WITH_OPENAL OFF CACHE BOOL "" FORCE)
 set(WITH_SDL_AUDIO OFF CACHE BOOL "" FORCE)
