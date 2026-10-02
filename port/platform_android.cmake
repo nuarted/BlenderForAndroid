@@ -89,7 +89,7 @@ set(WITH_PULSEAUDIO OFF CACHE BOOL "" FORCE)
 set(WITH_WASAPI OFF CACHE BOOL "" FORCE)
 set(WITH_COREAUDIO OFF CACHE BOOL "" FORCE)
 
-set(WITH_FFMPEG OFF CACHE BOOL "" FORCE)
+set(WITH_CODEC_FFMPEG OFF CACHE BOOL "" FORCE)
 
 # These codecs are not supplied by the Android dependency build. Match the
 # host-tools configuration instead of compiling against unavailable headers.

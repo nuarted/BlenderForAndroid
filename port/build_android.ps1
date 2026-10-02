@@ -83,7 +83,7 @@ $cmakeArgs = @(
     "-DWITH_AUDASPACE=OFF",
     # Freestyle render style engine depends on Python.h.
     "-DWITH_FREESTYLE=OFF",
-    "-DWITH_FFMPEG=OFF",
+    "-DWITH_CODEC_FFMPEG=OFF",
     "-DWITH_INTERNATIONAL=OFF",
     "-DWITH_OPENVDB=OFF",
     "-DWITH_OPENCOLORIO=OFF",
