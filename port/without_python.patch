@@ -1,5 +1,5 @@
 diff --git a/source/blender/editors/interface/interface_handlers.cc b/source/blender/editors/interface/interface_handlers.cc
-index 22541c64719..81615f397c8 100644
+index 22541c64719..c67add1b965 100644
 --- a/source/blender/editors/interface/interface_handlers.cc
 +++ b/source/blender/editors/interface/interface_handlers.cc
 @@ -3727,11 +3727,13 @@ static void button_edit_unit_hint_refresh(bContext *C, Button *but, HandleButton
@@ -16,3 +16,17 @@ index 22541c64719..81615f397c8 100644
  
      const void *usys;
      int len;
+@@ -3753,11 +3755,13 @@ static void button_edit_unit_hint_refresh(bContext *C, Button *but, HandleButton
+       return;
+     }
+ 
++#ifdef WITH_PYTHON
+     /* If the expression we're entering is not valid, don't show the hint. */
+     if (!BPY_string_compile_check(data->text_edit.edit_string)) {
+       data->text_edit_unit_hint.clear();
+       return;
+     }
++#endif
+   }
+ 
+   if (name_short.empty()) {
