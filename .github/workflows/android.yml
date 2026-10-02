@@ -18,6 +18,11 @@ env:
   # Blender upstream commit this port is based on.
   BLENDER_COMMIT: be07d99aaed8df8a9b47d73b7726f721b94b74e3
   NDK_VERSION: r27c
+  VCPKG_COMMIT: 3aea538b2bb21a586502c67b00eb474fdd2e3098
+  VCPKG_DEFAULT_BINARY_CACHE: /home/runner/.cache/vcpkg/archives
+  CCACHE_DIR: /home/runner/.cache/ccache
+  CCACHE_MAXSIZE: 3G
+  CCACHE_COMPILERCHECK: content
   API_LEVEL: "26"
   # Native deps for the host tools (vcpkg triplet; x64-linux on x86_64 hosts).
   HOST_TRIPLET: x64-linux
@@ -31,12 +36,30 @@ jobs:
       - name: Checkout this repo (patch + port files)
         uses: actions/checkout@v4
 
+      - name: Restore dependency cache
+        id: deps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: android-deps-v1-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ env.VCPKG_COMMIT }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            android-deps-v1-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ env.VCPKG_COMMIT }}-
+
+      - name: Restore compiler cache
+        id: compiler-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: android-ccache-v1-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ env.BLENDER_COMMIT }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            android-ccache-v1-${{ runner.os }}-${{ env.NDK_VERSION }}-${{ env.BLENDER_COMMIT }}-
+
       - name: Install toolchain
         run: |
           echo "DEBIAN_FRONTEND=noninteractive" >> "$GITHUB_ENV"
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            build-essential g++-14 gcc-14 cmake ninja-build pkg-config \
+            build-essential g++-14 gcc-14 cmake ninja-build ccache pkg-config \
             git ca-certificates unzip automake autoconf autoconf-archive libtool \
             python3 bison flex \
             libx11-dev libxcb1-dev libxrandr-dev \
@@ -46,6 +69,7 @@ jobs:
           HOST_PYTHON="$(command -v python3)"
           "$HOST_PYTHON" --version
           echo "HOST_PYTHON=$HOST_PYTHON" >> "$GITHUB_ENV"
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" "$CCACHE_DIR"
 
       - name: Download Android NDK ${{ env.NDK_VERSION }}
         run: |
@@ -70,7 +94,11 @@ jobs:
                 blender/intern/ghost/intern/
 
       - name: Clone vcpkg
-        run: git clone --depth=1 https://github.com/microsoft/vcpkg.git /opt/vcpkg
+        run: |
+          git init /opt/vcpkg
+          git -C /opt/vcpkg remote add origin https://github.com/microsoft/vcpkg.git
+          git -C /opt/vcpkg fetch --depth=1 origin "$VCPKG_COMMIT"
+          git -C /opt/vcpkg checkout --detach FETCH_HEAD
 
       - name: Bootstrap vcpkg
         run: /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
@@ -114,6 +142,8 @@ jobs:
           CXX: /usr/bin/g++-14
         run: |
           cmake -S blender -B build-host -G Ninja \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DPYTHON_EXECUTABLE:FILEPATH="$HOST_PYTHON" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="/opt/vcpkg/installed/${{ env.HOST_TRIPLET }}" \
@@ -148,6 +178,8 @@ jobs:
           ANDROID_NDK_HOME: /opt/android-ndk-${{ env.NDK_VERSION }}
         run: |
           cmake -S blender -B build-android -G Ninja \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DPYTHON_EXECUTABLE:FILEPATH="$HOST_PYTHON" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_SYSTEM_NAME=Android \
@@ -177,6 +209,25 @@ jobs:
 
       - name: Build Android
         run: ninja -C build-android blender
+
+      # Preserve completed work even when compilation fails later in the run.
+      - name: Save dependency cache
+        if: ${{ always() && steps.deps-cache.outcome == 'success' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.deps-cache.outputs.cache-primary-key }}
+
+      - name: Save compiler cache
+        if: ${{ always() && steps.compiler-cache.outcome == 'success' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.compiler-cache.outputs.cache-primary-key }}
+
+      - name: Compiler cache statistics
+        if: always()
+        run: ccache --show-stats
 
       - name: Upload APK / binaries artifact
         uses: actions/upload-artifact@v4
