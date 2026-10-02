@@ -116,6 +116,8 @@ set(WITH_MOD_FLUID OFF CACHE BOOL "" FORCE)
 set(WITH_MOD_OCEANSIM OFF CACHE BOOL "" FORCE)
 
 set(WITH_TBB OFF CACHE BOOL "" FORCE)
+# The allocator replacement has its own option, independent of WITH_TBB.
+set(WITH_TBB_MALLOC_PROXY OFF CACHE BOOL "" FORCE)
 set(WITH_POTRACE OFF CACHE BOOL "" FORCE)
 set(WITH_HARU OFF CACHE BOOL "" FORCE)
 
@@ -259,6 +261,15 @@ find_package(ZLIB REQUIRED)
 find_package(PNG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(Zstd REQUIRED)
+
+# Optional SVG export support requires PugiXML, just as on native platforms.
+if(WITH_PUGIXML)
+  find_package(PugiXML QUIET)
+  if(NOT PUGIXML_FOUND)
+    set(WITH_PUGIXML OFF CACHE BOOL "" FORCE)
+    message(STATUS "PugiXML not found for Android, disabling WITH_PUGIXML")
+  endif()
+endif()
 
 # Manifold is optional and is not part of the current Android dependencies.
 # Match the native platform's fallback instead of enabling code that includes

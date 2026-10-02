@@ -87,6 +87,7 @@ jobs:
       - name: Apply Android port
         run: |
           git -C blender apply --whitespace=nowarn "$GITHUB_WORKSPACE/port/blender_android.patch"
+          git -C blender apply --whitespace=nowarn "$GITHUB_WORKSPACE/port/without_python.patch"
           cp -v "$GITHUB_WORKSPACE"/port/platform_android.cmake \
                 blender/build_files/cmake/platform/platform_android.cmake
           cp -v "$GITHUB_WORKSPACE"/port/GHOST_ContextSDL_EGL.cc \
@@ -129,7 +130,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
           /opt/vcpkg/vcpkg install \
-            --triplet arm64-android \
+            --triplet arm64-android --overlay-triplets="$GITHUB_WORKSPACE/port/triplets" \
             sdl3 libepoxy fmt openexr openimageio opencolorio \
             eigen3 freetype brotli zlib zstd tiff libpng libjpeg-turbo
 

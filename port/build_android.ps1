@@ -69,7 +69,7 @@ $cmakeArgs = @(
     # The NDK's legacy toolchain file reads ANDROID_ABI / ANDROID_PLATFORM and
     # ignores CMAKE_ANDROID_ARCH_ABI / CMAKE_ANDROID_API, defaulting the ABI to
     # armeabi-v7a (32-bit). Set both explicitly so we truly target arm64-v8a at
-    # API 26, matching the vcpkg arm64-android triplet.
+    # API 26, matching the repository overlay triplet.
     "-DANDROID_ABI=$Arch",
     "-DANDROID_PLATFORM=android-$ApiLevel",
     "-DCMAKE_BUILD_TYPE=Release",
@@ -142,7 +142,8 @@ if (Test-Path $HostPython) {
 # Point Blender at the vcpkg cross-compiled libraries (SDL3, epoxy, fmt, ...).
 # These are installed by:
 #   vcpkg install sdl3 libepoxy fmt openexr opencolorio openimageio \
-#     eigen3 freetype brotli zlib zstd libpng libjpeg-turbo --triplet arm64-android
+#     eigen3 freetype brotli zlib zstd libpng libjpeg-turbo --triplet arm64-android \
+#     --overlay-triplets=<BlenderForAndroid>/port/triplets
 $VcpkgInstalled = "C:/vcpkg/installed/arm64-android"
 if (Test-Path "$VcpkgInstalled/include/SDL3/SDL.h") {
     $cmakeArgs += "-DCMAKE_PREFIX_PATH=$VcpkgInstalled"
